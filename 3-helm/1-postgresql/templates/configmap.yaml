@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: '{{ template "postgresql.fullname" . }}'
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+data:
+  POSTGRES_USER: "{{ .Values.application.username }}"
+  POSTGRES_DB: "{{ .Values.application.database }}"
+  POSTGRES_REPLICATION_USER: "{{ .Values.replication.username }}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: '{{ template "postgresql.cmfiles.fullname" . }}'
+  labels:
+    {{- include "postgresql.labels" . | nindent 4 }}
+data:
+  replication_user.sql: |-
+    DO
+    $do$
+    BEGIN
+      IF NOT EXISTS (
+          SELECT
+          FROM  pg_catalog.pg_roles
+          WHERE rolname = '{{ .Values.replication.username }}') THEN
+          CREATE ROLE {{ .Values.replication.username }} with REPLICATION LOGIN PASSWORD '{{ .Values.replication.password }}';
+      END IF;
+    END
+    $do$;
+  pg_hba.conf: |-
+    local   all           all                     trust
+    host    all           all       127.0.0.1/32  trust
+    host    all           all       ::1/128       trust
+
+    host    all           {{ .Values.application.username }}  0.0.0.0/0     md5
+    host    all           {{ .Values.application.username }}  ::0/0         md5
+
+    host    replication   {{ .Values.replication.username }}  0.0.0.0/0     md5
+    host    replication   {{ .Values.replication.username }}  ::0/0         md5

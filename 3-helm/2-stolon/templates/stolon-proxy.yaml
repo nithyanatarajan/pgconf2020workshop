@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: '{{ template "proxy.fullname" . }}'
+  labels:
+    name: '{{ template "proxy.fullname" . }}'
+    {{- include "stolon.labels" . | nindent 4 }}
+spec:
+  {{- $backend := include "store.backend" . }}
+  replicas: {{.Values.stolon.proxy.replicas}}
+  selector:
+    matchLabels:
+      name: {{ template "proxy.fullname" . }}
+  template:
+    metadata:
+      labels:
+        name: {{ template "proxy.fullname" . }}
+        {{- include "stolon.selectorLabels" . | nindent 8 }}
+        stolon-proxy: "true"
+        component: stolon-proxy
+        stolon-cluster: {{ template "stolonctl.clustername" . }}
+      annotations:
+    spec:
+      {{- if eq $backend "kubernetes" }}
+      serviceAccountName: '{{template "stolon.fullname" .}}-stolon'
+      serviceAccount: '{{template "stolon.fullname" .}}-stolon'
+      {{- end }}
+      {{- if ne $backend "kubernetes" }}
+      initContainers:
+        - name: init-stolon-sentinel
+          image: jwilder/dockerize
+          command: ['dockerize', '-timeout', '120s', '-wait', '{{ template "store.backend.healthURL" . }}']
+      {{- end }}
+      containers:
+      - name: {{ template "proxy.fullname" . }}
+        image: '{{- .Values.stolon.image.name -}}:{{- .Values.stolon.image.tag -}}'
+        imagePullPolicy: {{ .Values.stolon.image.pullPolicy }}
+        command:
+          - "/bin/bash"
+          - "-ec"
+          - |
+            exec gosu stolon stolon-proxy
+        env:
+          - name: STPROXY_CLUSTER_NAME
+            value: {{ template "stolonctl.clustername" . }}
+          - name: STOLONCTL_CLUSTER_NAME
+            value: $(STPROXY_CLUSTER_NAME)
+          - name: STPROXY_STORE_BACKEND
+            value: {{ $backend }}
+          - name: STOLONCTL_STORE_BACKEND
+            value: $(STPROXY_STORE_BACKEND)
+          {{- if eq $backend "kubernetes" }}
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: STPROXY_KUBE_RESOURCE_KIND
+            value: configmap
+          - name: STOLONCTL_KUBE_RESOURCE_KIND
+            value: $(STPROXY_KUBE_RESOURCE_KIND)
+          - name: STOLONCTL_KUBE_NAMESPACE
+            value: {{ .Release.Namespace }}
+          {{- else }}
+          - name: STPROXY_STORE_ENDPOINTS
+            value: {{ template "store.endpoint" . }}
+          - name: STOLONCTL_STORE_ENDPOINTS
+            value: $(STPROXY_STORE_ENDPOINTS)
+          {{- end }}
+          - name: STPROXY_DEBUG
+            value: "{{- .Values.stolon.proxy.debug -}}"
+          - name: STPROXY_LISTEN_ADDRESS
+            value: "0.0.0.0"
+        ports:
+          - containerPort: 5432
+        livenessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          tcpSocket:
+            port: 5432
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        resources:
+{{ toYaml .Values.stolon.proxy.resources | indent 10 }}

@@ -1,0 +1,20 @@
+{{- $backend := include "store.backend" . }}
+{{- if eq $backend "kubernetes" }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: '{{template "stolon.fullname" .}}-stolon'
+  namespace: {{.Release.Namespace}}
+  labels:
+    name: '{{template "stolon.fullname" .}}-stolon'
+    {{- include "stolon.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  - configmaps
+  - events
+  verbs:
+  - "*"
+{{- end -}}

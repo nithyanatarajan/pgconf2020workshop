@@ -1,0 +1,86 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: '{{template "stolon.fullname" .}}-initialize-cluster'
+  labels:
+    name: '{{template "stolon.fullname" .}}-initialize-cluster'
+    {{- include "stolon.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  {{- $backend := include "store.backend" . }}
+  template:
+    metadata:
+      name: "{{.Release.Name}}"
+      labels:
+        name: '{{template "stolon.fullname" .}}-initialize-cluster'
+        {{- include "stolon.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: Never
+      {{- if eq $backend "kubernetes" }}
+      serviceAccountName: '{{template "stolon.fullname" .}}-stolon'
+      serviceAccount: '{{template "stolon.fullname" .}}-stolon'
+      {{- end }}
+      containers:
+      - name: cluster-initialize-job
+        image: '{{- .Values.stolon.image.name -}}:{{- .Values.stolon.image.tag -}}'
+        imagePullPolicy: {{ .Values.stolon.image.pullPolicy }}
+        command:
+          - "/bin/bash"
+          - "-c"
+          - |
+            {{- $version := semver .Values.stolon.image.tag }}
+            {{- $semVer := printf "%d.%d.%d" $version.Major $version.Minor $version.Patch }}
+
+            STOLONCTL_CMD="stolonctl --cluster-name={{ template "stolonctl.clustername" . }} --store-backend={{ $backend }}"
+
+            {{- if eq $backend "kubernetes" }}
+            STOLONCTL_CMD="${STOLONCTL_CMD} --kube-resource-kind configmap --kube-namespace {{ .Release.Namespace }}"
+            {{- else }}
+            STOLONCTL_CMD="${STOLONCTL_CMD} --store-endpoints {{ template "store.endpoint" . }}"
+            {{- end }}
+
+            {{- $result := semver "0.14.0" | (semver $semVer).Compare }}
+            {{- if gt $result -1 }}
+            ${STOLONCTL_CMD} clusterdata read
+            {{- else }}
+            ${STOLONCTL_CMD} clusterdata
+            {{- end }}
+
+            EXIT_STATUS=$?
+            if [ "0" -ne "$EXIT_STATUS" ]; then
+                echo 'Clusterdata does not exist. Allowing installation'
+            else
+            {{- if and (not .Values.stolon.joinExisting) (not .Values.stolon.forceInitialize) }}
+                echo 'Clusterdata already exists. Failing installation'
+                exit 1
+            {{- else }}
+                echo "Clusterdata already exists. Allowing installation as joinExisting: {{ .Values.stolon.joinExisting }} and forceInitialize: {{ .Values.stolon.forceInitialize }}"
+            {{- end }}
+            fi
+
+            {{- if .Values.stolon.forceInitialize }}
+            ${STOLONCTL_CMD} init --yes '{{ template "cluster.init-specification.json" .}}'
+            {{- else }}
+              {{- $result := semver "0.14.0" | (semver $semVer).Compare }}
+              {{- if gt $result -1 }}
+            ${STOLONCTL_CMD} clusterdata read
+              {{- else }}
+            ${STOLONCTL_CMD} clusterdata
+              {{- end }}
+
+            EXIT_STATUS=$?
+            if [ "0" -ne "$EXIT_STATUS" ]; then
+              ${STOLONCTL_CMD} init --yes '{{ template "cluster.init-specification.json" .}}'
+            else
+              echo 'Clusterdata already exists'
+            fi
+            {{- end }}
+      {{- if ne $backend "kubernetes" }}
+      initContainers:
+        - name: wait-for-store
+          image: jwilder/dockerize
+          command: ['dockerize', '-timeout', '120s', '-wait', '{{ template "store.backend.healthURL" . }}']
+      {{- end }}

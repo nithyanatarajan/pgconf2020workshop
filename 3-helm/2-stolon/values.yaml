@@ -1,0 +1,64 @@
+nameOverride: ""
+fullnameOverride: ""
+store:
+  backend:
+    # type: kubernetes
+    type: consul
+    endpoint: "http://stolon-backend-consul.default:8500"
+persistence:
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  # storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
+stolon:
+  image:
+    name: sorintlab/stolon
+    tag: v0.15.0-pg10
+    pullPolicy: IfNotPresent
+  # To namespace a stolon cluster
+  namespaced: false
+  keeper:
+    replicas: 2
+    # to enable debug log is needed
+    debug: false
+    resources: {}
+    # limits:
+    #   cpu: 100m
+    #   memory: 128Mi
+    # requests:
+    #   cpu: 100m
+    #   memory: 128Mi
+  sentinel:
+    replicas: 3
+    # to enable debug log is needed
+    debug: false
+    resources: {}
+  proxy:
+    replicas: 3
+    # to enable debug log is needed
+    debug: false
+    resources: {}
+standby:
+  enabled: false
+  remoteHost: remote-host.namespace
+  primarySlotName: slotname
+postgres:
+  application:
+    username: postgres
+    password: some-random-password
+    dbname: postgres
+  replication:
+    username: repluser
+    password: repl-password
+metrics:
+  enabled: false
+  image:
+    name: wrouesnel/postgres_exporter
+    tag: v0.8.0
+    pullPolicy: IfNotPresent
+  scrapeInterval: 30s

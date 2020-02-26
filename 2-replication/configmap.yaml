@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgconf-postgresql
+  labels:
+    app: postgresql
+    release: "pgconf"
+data:
+  POSTGRES_USER: "postgres"
+  POSTGRES_DB: "postgres"
+  POSTGRES_REPLICATION_USER: "repluser"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pgconf-files-postgresql
+  labels:
+    app: postgresql
+    release: "pgconf"
+data:
+  replication_user.sql.tmpl: |-
+    DO
+    $do$
+    BEGIN
+      IF NOT EXISTS (
+          SELECT
+          FROM  pg_catalog.pg_roles
+          WHERE rolname = '{{ .Env.POSTGRES_REPLICATION_USER }}') THEN
+          CREATE ROLE {{ .Env.POSTGRES_REPLICATION_USER }} with REPLICATION LOGIN PASSWORD '{{ .Env.POSTGRES_REPLICATION_PASSWORD }}';
+      END IF;
+    END
+    $do$;
+  pg_hba.conf.tmpl: |-
+    local   all           all                     trust
+    host    all           all       127.0.0.1/32  trust
+    host    all           all       ::1/128       trust
+
+    host    all           {{ .Env.POSTGRES_USER }}  0.0.0.0/0     md5
+    host    all           {{ .Env.POSTGRES_USER }}  ::0/0         md5
+
+    host    replication   {{ .Env.POSTGRES_REPLICATION_USER }}  0.0.0.0/0     md5
+    host    replication   {{ .Env.POSTGRES_REPLICATION_USER }}  ::0/0         md5

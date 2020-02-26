@@ -1,0 +1,125 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: '{{ template "keeper.fullname" . }}'
+  labels:
+    name: '{{ template "keeper.fullname" . }}'
+    {{- include "stolon.labels" . | nindent 4 }}
+spec:
+  serviceName: '{{ template "keeper.fullname" . }}'
+  selector:
+    matchLabels:
+      name: '{{ template "keeper.fullname" . }}'
+      {{- include "stolon.selectorLabels" . | nindent 6 }}
+      component: stolon-keeper
+      stolon-cluster: {{ template "stolonctl.clustername" . }}
+  {{- $backend := include "store.backend" . }}
+  replicas: {{ .Values.stolon.keeper.replicas }}
+  template:
+    metadata:
+      labels:
+        name: '{{ template "keeper.fullname" . }}'
+        {{- include "stolon.selectorLabels" . | nindent 8 }}
+        component: stolon-keeper
+        stolon-cluster: {{ template "stolonctl.clustername" . }}
+    spec:
+      terminationGracePeriodSeconds: 10
+      {{- if eq $backend "kubernetes" }}
+      serviceAccountName: '{{template "stolon.fullname" .}}-stolon'
+      serviceAccount: '{{template "stolon.fullname" .}}-stolon'
+      {{- end }}
+      {{- if ne $backend "kubernetes" }}
+      initContainers:
+        - name: wait-for-store
+          image: jwilder/dockerize
+          command: ['dockerize', '-timeout', '120s', '-wait', '{{ template "store.backend.healthURL" . }}']
+      {{- end}}
+      containers:
+      - name: '{{ template "keeper.fullname" . }}'
+        image: '{{- .Values.stolon.image.name -}}:{{- .Values.stolon.image.tag -}}'
+        imagePullPolicy: {{ .Values.stolon.image.pullPolicy }}
+        command:
+          - "/bin/bash"
+          - "-ec"
+          - |
+            # Generate our keeper uid using the pod index
+            KEEPER_UID_PREFIX={{- default "keeper" .Values.stolon.keeper.UIDPrefix }}
+            IFS='-' read -ra ADDR <<< "$(hostname)"
+            export STKEEPER_UID="${KEEPER_UID_PREFIX}${ADDR[-1]}"
+            export POD_IP=$(hostname -i)
+            export STKEEPER_PG_LISTEN_ADDRESS=$POD_IP
+
+            {{- if .Values.standby.enabled }}
+            cp /etc/secrets/stolon/standbypassword {{ template "standby.passwordfile.path" . }}
+            chmod 600 {{ template "standby.passwordfile.path" . }}
+            chown stolon:stolon {{ template "standby.passwordfile.path" . }}
+            {{- end }}
+
+            export STOLON_DATA=/stolon-data
+            chown -R stolon:stolon $STOLON_DATA
+            exec gosu stolon stolon-keeper --data-dir $STOLON_DATA
+        env:
+          - name: STKEEPER_CLUSTER_NAME
+            value: {{ template "stolonctl.clustername" . }}
+          - name: STOLONCTL_CLUSTER_NAME
+            value: $(STKEEPER_CLUSTER_NAME)
+          - name: STKEEPER_STORE_BACKEND
+            value: {{ $backend }}
+          - name: STOLONCTL_STORE_BACKEND
+            value: $(STKEEPER_STORE_BACKEND)
+          {{- if eq $backend "kubernetes" }}
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: STKEEPER_KUBE_RESOURCE_KIND
+            value: configmap
+          - name: STOLONCTL_KUBE_RESOURCE_KIND
+            value: $(STKEEPER_KUBE_RESOURCE_KIND)
+          - name: STOLONCTL_KUBE_NAMESPACE
+            value: {{ .Release.Namespace }}
+          {{- else }}
+          - name: STKEEPER_STORE_ENDPOINTS
+            value: {{ template "store.endpoint" . }}
+          - name: STOLONCTL_STORE_ENDPOINTS
+            value: $(STKEEPER_STORE_ENDPOINTS)
+          {{- end }}
+          - name: STKEEPER_DEBUG
+            value: "{{- .Values.stolon.keeper.debug -}}"
+          - name: STKEEPER_PG_REPL_USERNAME
+            value: "{{- .Values.postgres.replication.username -}}"
+          - name: STKEEPER_PG_REPL_PASSWORDFILE
+            value: "/etc/secrets/stolon/replpassword"
+          - name: STKEEPER_PG_SU_USERNAME
+            value: "{{- .Values.postgres.application.username -}}"
+          - name: STKEEPER_PG_SU_PASSWORDFILE
+            value: "/etc/secrets/stolon/password"
+        ports:
+          - containerPort: 5432
+        volumeMounts:
+        - mountPath: /stolon-data
+          name: data
+        - mountPath: /etc/secrets/stolon
+          name: stolon
+        resources:
+{{ toYaml .Values.stolon.keeper.resources | indent 10 }}
+{{- if .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+{{- end }}
+      volumes:
+        - name: stolon
+          secret:
+            secretName: {{ template "stolon.fullname" . }}
+        - name: data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: {{ .Values.persistence.accessModes }}
+        resources:
+          requests:
+            storage: {{ required "Provide a value for .Values.persistence.size. No defaults are configured." .Values.persistence.size | quote }}
+{{- if .Values.persistence.storageClass }}
+        storageClassName: {{ .Values.persistence.storageClass }}
+{{- end -}}

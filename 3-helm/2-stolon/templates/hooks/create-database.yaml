@@ -1,0 +1,49 @@
+{{- if not .Values.standby.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: '{{template "stolon.fullname" .}}-createdb'
+  labels:
+    name: '{{template "stolon.fullname" .}}-createdb'
+    {{- include "stolon.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "2"
+    "helm.sh/hook-delete-policy": before-hook-creation
+spec:
+  template:
+    metadata:
+      name: "{{.Release.Name}}"
+      labels:
+        name: '{{template "stolon.fullname" .}}-createdb'
+        {{- include "stolon.labels" . | nindent 8 }}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: create-database-job
+        image: 'postgres'
+        env:
+          - name: USERNAME
+            value: "{{- .Values.postgres.application.username -}}"
+          - name: HOST
+            value: '{{ template "stolon.fullname" . }}'
+        command:
+          - bash
+          - "-ec"
+          - |
+            export PGPASSWORD=$(cat /etc/secrets/stolon/password)
+
+            psql -h $HOST -U $USERNAME -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '{{.Values.postgres.application.dbname}}'" |
+              grep -q 1 || createdb --echo -h $HOST -U $USERNAME {{.Values.postgres.application.dbname}}
+        volumeMounts:
+        - mountPath: /etc/secrets/stolon
+          name: stolon
+      volumes:
+        - name: stolon
+          secret:
+            secretName: {{ template "stolon.fullname" . }}
+      initContainers:
+        - name: wait-for-database
+          image: jwilder/dockerize
+          command: ['dockerize', '-timeout', '30s', '-wait', 'tcp://{{ template "stolon.fullname" . }}:5432']
+{{- end -}}

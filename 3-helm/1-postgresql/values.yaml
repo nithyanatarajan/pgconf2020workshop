@@ -1,0 +1,23 @@
+nameOverride: ""
+fullnameOverride: ""
+image:
+  name: postgres
+  tag: '10.12'
+  pullPolicy: IfNotPresent
+application:
+  username: postgres
+  password: some-random-password
+  database: postgres
+replication:
+  username: repluser
+  password: repl-password
+persistence:
+  ## If defined, storageClassName: <storageClass>
+  ## If set to "-", storageClassName: "", which disables dynamic provisioning
+  ## If undefined (the default) or set to null, no storageClassName spec is
+  ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
+  ##   GKE, AWS & OpenStack)
+  # storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  size: 1Gi
