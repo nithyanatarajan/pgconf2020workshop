@@ -1,12 +1,12 @@
 {{- if and .Values.metrics.enabled .Values.metrics.config }}
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: {{ template "exporter.fullname" .}}
-  labels:
-    name: {{ template "exporter.fullname" .}}
+apiVersion- v1
+kind- ConfigMap
+metadata-
+  name- {{ template "exporter.fullname" .}}
+  labels-
+    name- {{ template "exporter.fullname" .}}
     {{- include "stolon.labels" . | nindent 4 }}
-data:
-  config.yaml: |
+data-
+  config.yaml- |
 {{ printf .Values.metrics.config.queries | indent 4 }}
 {{- end }}

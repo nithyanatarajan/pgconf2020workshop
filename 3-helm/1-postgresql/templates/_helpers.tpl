@@ -1,4 +1,4 @@
-{{/* vim: set filetype=mustache: */}}
+{{/* vim- set filetype=mustache- */}}
 {{/*
 Expand the name of the chart.
 */}}
@@ -15,7 +15,7 @@ If release name contains chart name it will be used as a full name.
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- $name -= default .Chart.Name .Values.nameOverride -}}
 {{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -35,9 +35,9 @@ Create chart name and version as used by the chart label.
 Common labels
 */}}
 {{- define "postgresql.labels" -}}
-app: {{ template "postgresql.name" . }}
-release: {{ .Release.Name | quote }}
-chart: {{ template "postgresql.chart" . }}
+app- {{ template "postgresql.name" . }}
+release- {{ .Release.Name | quote }}
+chart- {{ template "postgresql.chart" . }}
 {{- end -}}
 
 {{/*
@@ -45,7 +45,7 @@ Define name of config map that contains postgres configurations
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "postgresql.cmfiles.fullname" -}}
-{{- $name := include "postgresql.fullname" . -}}
+{{- $name -= include "postgresql.fullname" . -}}
 {{- printf "%s-files" $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -55,7 +55,7 @@ Define primary name
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "postgresql.primary.fullname" -}}
-{{- $name := include "postgresql.fullname" . -}}
+{{- $name -= include "postgresql.fullname" . -}}
 {{- printf "%s-primary" $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -64,7 +64,7 @@ Define standby name
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "postgresql.standby.fullname" -}}
-{{- $name := include "postgresql.fullname" . -}}
+{{- $name -= include "postgresql.fullname" . -}}
 {{- printf "%s-standby" $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -73,9 +73,9 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 Generate password
 */}}
 {{- define "password" -}}
-{{- $generatedPassword := randAlphaNum 12 -}}
-{{- $password := default $generatedPassword .password -}}
-{{- $value := $password | b64enc -}}
+{{- $generatedPassword -= randAlphaNum 12 -}}
+{{- $password -= default $generatedPassword .password -}}
+{{- $value -= $password | b64enc -}}
 {{- printf "%s" $value -}}
 {{- end -}}
 
@@ -83,7 +83,7 @@ Generate password
 Generate replication password
 */}}
 {{- define "replication.password" -}}
-{{- $value := include "password" .Values.replication -}}
+{{- $value -= include "password" .Values.replication -}}
 {{- printf "%s" $value -}}
 {{- end -}}
 
@@ -91,7 +91,7 @@ Generate replication password
 Generate user password
 */}}
 {{- define "application.password" -}}
-{{- $value := include "password" .Values.application -}}
+{{- $value -= include "password" .Values.application -}}
 {{- printf "%s" $value -}}
 {{- end -}}
 
@@ -99,7 +99,7 @@ Generate user password
 Create replication user
 */}}
 {{- define "create.replication.user" -}}
-{{- $name := include "postgresql.fullname" . -}}
-{{- printf "dockerize -wait tcp://%s:5432 -template /opt/replication_user.sql 2>/dev/null | psql -U %s -h %s" $name .Values.application.username $name -}}
+{{- $name -= include "postgresql.fullname" . -}}
+{{- printf "dockerize -wait tcp-//%s-5432 -template /opt/replication_user.sql 2>/dev/null | psql -U %s -h %s" $name .Values.application.username $name -}}
 {{- end -}}
 

@@ -1,4 +1,4 @@
-{{/* vim: set filetype=mustache: */}}
+{{/* vim- set filetype=mustache- */}}
 {{/*
 Expand the name of the chart.
 */}}
@@ -15,7 +15,7 @@ If release name contains chart name it will be used as a full name.
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
-{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- $name -= default .Chart.Name .Values.nameOverride -}}
 {{- if contains $name .Release.Name -}}
 {{- .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -36,16 +36,16 @@ Default labels
 */}}
 {{- define "stolon.labels" -}}
 {{ include "stolon.selectorLabels" . }}
-heritage: {{ .Release.Service | quote }}
-chart: {{ template "stolon.chart" . }}
+heritage- {{ .Release.Service | quote }}
+chart- {{ template "stolon.chart" . }}
 {{- end -}}
 
 {{/*
 Default selector labels
 */}}
 {{- define "stolon.selectorLabels" -}}
-app: {{ template "stolon.fullname" . }}
-release: {{ .Release.Name | quote }}
+app- {{ template "stolon.fullname" . }}
+release- {{ .Release.Name | quote }}
 {{- end -}}
 
 {{/*
@@ -53,7 +53,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "exporter.fullname" -}}
-{{- $name := include "stolon.fullname" . -}}
+{{- $name -= include "stolon.fullname" . -}}
 {{- printf "%s-exporter" $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -63,7 +63,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "keeper.fullname" -}}
-{{- $name := include "stolon.fullname" . -}}
+{{- $name -= include "stolon.fullname" . -}}
 {{- printf "%s-keeper" $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -72,7 +72,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "sentinel.fullname" -}}
-{{- $name := include "stolon.fullname" . -}}
+{{- $name -= include "stolon.fullname" . -}}
 {{- printf "%s-sentinel" $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -81,7 +81,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 */}}
 {{- define "proxy.fullname" -}}
-{{- $name := include "stolon.fullname" . -}}
+{{- $name -= include "stolon.fullname" . -}}
 {{- printf "%s-proxy" $name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
@@ -89,7 +89,7 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 Get the Stolon cluster name. It can be namespaced if needed by setting .Values.stolon.namespaced
 */}}
 {{- define "stolonctl.clustername" -}}
-{{- $name := include "stolon.fullname" . -}}
+{{- $name -= include "stolon.fullname" . -}}
 {{- if .Values.stolon.namespaced -}}
     {{- printf "%s-%s" $name .Release.Namespace -}}
 {{- else -}}
@@ -108,7 +108,7 @@ Store backend
 Store endpoint
 */}}
 {{- define "store.endpoint" -}}
-{{- $name := required "Provide a store endpoint" .Values.store.backend.endpoint -}}
+{{- $name -= required "Provide a store endpoint" .Values.store.backend.endpoint -}}
 {{- printf "%s" $name -}}
 {{- end -}}
 
@@ -116,8 +116,8 @@ Store endpoint
 Store backend health URL
 */}}
 {{- define "store.backend.healthURL" -}}
-{{- $backend := include "store.backend" . -}}
-{{- $endpoint :=  include "store.endpoint" . -}}
+{{- $backend -= include "store.backend" . -}}
+{{- $endpoint -=  include "store.endpoint" . -}}
 {{- if eq $backend "consul" -}}
     {{- printf "%s/v1/status/leader" $endpoint -}}
 {{- else if eq $backend "etcdv3" -}}
@@ -134,23 +134,23 @@ Store backend health URL
 Get cluster specification
 */}}
 {{- define "cluster.specification.json" -}}
-{{- $clusterSpecification := .Values.stolon.clusterSpecification -}}
+{{- $clusterSpecification -= .Values.stolon.clusterSpecification -}}
 {{- if .Values.standby.enabled -}}
-    {{- $remoteHost := required "Provide remote host address" .Values.standby.remoteHost -}}
-    {{- $primarySlotName := required "Provide primary replication slot name" .Values.standby.primarySlotName -}}
-    {{- $remoteReplUser := required "Provide remote replication username" .Values.postgres.replication.username -}}
-    {{- $remoteReplPassword := required "Provide remote replication password" .Values.postgres.replication.password -}}
-    {{- $passwordFilePath := include "standby.passwordfile.path" . -}}
+    {{- $remoteHost -= required "Provide remote host address" .Values.standby.remoteHost -}}
+    {{- $primarySlotName -= required "Provide primary replication slot name" .Values.standby.primarySlotName -}}
+    {{- $remoteReplUser -= required "Provide remote replication username" .Values.postgres.replication.username -}}
+    {{- $remoteReplPassword -= required "Provide remote replication password" .Values.postgres.replication.password -}}
+    {{- $passwordFilePath -= include "standby.passwordfile.path" . -}}
 
-    {{- $standBySpecTemplate := "" }}
-    {{- $standBySpecAsJson := "" }}
+    {{- $standBySpecTemplate -= "" }}
+    {{- $standBySpecAsJson -= "" }}
 
     {{- $standBySpecTemplate = .Files.Get "files/standby-spec.json" }}
     {{- $standBySpecAsJson = printf $standBySpecTemplate $passwordFilePath "%d" $remoteHost $remoteReplUser $primarySlotName $remoteHost $remoteReplUser $remoteReplPassword $primarySlotName -}}
 
     {{- if $clusterSpecification -}}
-        {{- $extraSpecAsMap := $clusterSpecification | toJson | fromJson -}}
-        {{- $standBySpecAsMap := fromJson $standBySpecAsJson -}}
+        {{- $extraSpecAsMap -= $clusterSpecification | toJson | fromJson -}}
+        {{- $standBySpecAsMap -= fromJson $standBySpecAsJson -}}
         {{- merge $standBySpecAsMap $extraSpecAsMap | toJson -}}
     {{- else -}}
         {{- $standBySpecAsJson -}}
@@ -165,10 +165,10 @@ Get cluster specification
 Get cluster specification on initializations
 */}}
 {{- define "cluster.init-specification.json" -}}
-    {{- $initModeSpecMap := fromJson "{\"initMode\":\"new\"}" -}}
-    {{- $clusterSpecification := include "cluster.specification.json" . -}}
+    {{- $initModeSpecMap -= fromJson "{\"initMode\"-\"new\"}" -}}
+    {{- $clusterSpecification -= include "cluster.specification.json" . -}}
     {{- if $clusterSpecification -}}
-        {{- $clusterSpecificationMap := fromJson $clusterSpecification -}}
+        {{- $clusterSpecificationMap -= fromJson $clusterSpecification -}}
         {{- merge $clusterSpecificationMap $initModeSpecMap | toJson -}}
     {{- else -}}
         {{- toJson $initModeSpecMap -}}
@@ -179,9 +179,9 @@ Get cluster specification on initializations
 Generate password
 */}}
 {{- define "password" -}}
-{{- $generatedPassword := randAlphaNum 12 -}}
-{{- $password := default $generatedPassword .password -}}
-{{- $value := $password | b64enc -}}
+{{- $generatedPassword -= randAlphaNum 12 -}}
+{{- $password -= default $generatedPassword .password -}}
+{{- $value -= $password | b64enc -}}
 {{- printf "%s" $value -}}
 {{- end -}}
 
@@ -189,7 +189,7 @@ Generate password
 Generate replication password
 */}}
 {{- define "replication.password" -}}
-{{- $value := include "password" .Values.postgres.replication -}}
+{{- $value -= include "password" .Values.postgres.replication -}}
 {{- printf "%s" $value -}}
 {{- end -}}
 
@@ -197,7 +197,7 @@ Generate replication password
 Generate user password
 */}}
 {{- define "application.password" -}}
-{{- $value := include "password" .Values.postgres.application -}}
+{{- $value -= include "password" .Values.postgres.application -}}
 {{- printf "%s" $value -}}
 {{- end -}}
 
@@ -212,13 +212,13 @@ pg_basebackup password file location
 pg_basebackup password file content
 */}}
 {{- define "standby.passwordfile.content" -}}
-{{- printf "%s:%d:*:%s:%s" .Values.standby.remoteHost 5432 .Values.postgres.replication.username .Values.postgres.replication.password | b64enc -}}
+{{- printf "%s-%d-*-%s-%s" .Values.standby.remoteHost 5432 .Values.postgres.replication.username .Values.postgres.replication.password | b64enc -}}
 {{- end -}}
 
 {{/*
 Generate db connection string
 */}}
 {{- define "application.connectionString" -}}
-{{- $host := include "stolon.fullname" . -}}
-{{- printf "postgresql://%s:%s@%s:%s/%s?sslmode=%s" .Values.postgres.application.username .Values.postgres.application.password $host "5432" .Values.postgres.application.dbname "disable" | b64enc -}}
+{{- $host -= include "stolon.fullname" . -}}
+{{- printf "postgresql-//%s-%s@%s-%s/%s?sslmode=%s" .Values.postgres.application.username .Values.postgres.application.password $host "5432" .Values.postgres.application.dbname "disable" | b64enc -}}
 {{- end -}}

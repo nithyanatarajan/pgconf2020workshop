@@ -1,73 +1,73 @@
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: pgconf-postgresql
-  labels:
-    app: postgresql
-spec:
-  selector:
-    matchLabels:
-      app: postgresql
-  template:
-    metadata:
-      labels:
-        app: postgresql
-    spec:
-      initContainers:
-      - name: change-permission
-        image: postgres:10.12
-        command: ["/bin/bash", "-c"]
-        args: ["chown -R 999:999 /var/lib/postgresql/data/pgdata"]
-        volumeMounts:
-        - name: data
-          mountPath: /var/lib/postgresql/data/pgdata
-          subPath: postgresql-db
-      containers:
-      - name: pgconf-postgresql
-        image: postgres:10.12
-        securityContext:
-          runAsUser: 999
-          runAsGroup: 999
-        envFrom:
-        - configMapRef:
-            name: pgconf-postgresql
-        env:
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: pgconf-postgresql
-              key: postgres-password
-        - name: POD_IP
-          valueFrom: { fieldRef: { fieldPath: status.podIP } }
-        ports:
-        - name: postgresql
-          containerPort: 5432
-        livenessProbe:
-          tcpSocket:
-            port: 5432
-          initialDelaySeconds: 120
-          periodSeconds: 10
-          timeoutSeconds: 5
-          successThreshold: 1
-          failureThreshold: 6
-        readinessProbe:
-          exec:
-            command:
+apiVersion- apps/v1
+kind- Deployment
+metadata-
+  name- pgconf-postgresql
+  labels-
+    app- postgresql
+spec-
+  selector-
+    matchLabels-
+      app- postgresql
+  template-
+    metadata-
+      labels-
+        app- postgresql
+    spec-
+      initContainers-
+      - name- change-permission
+        image- postgres-10.12
+        command- ["/bin/bash", "-c"]
+        args- ["chown -R 999-999 /var/lib/postgresql/data/pgdata"]
+        volumeMounts-
+        - name- data
+          mountPath- /var/lib/postgresql/data/pgdata
+          subPath- postgresql-db
+      containers-
+      - name- pgconf-postgresql
+        image- postgres-10.12
+        securityContext-
+          runAsUser- 999
+          runAsGroup- 999
+        envFrom-
+        - configMapRef-
+            name- pgconf-postgresql
+        env-
+        - name- PGDATA
+          value- /var/lib/postgresql/data/pgdata
+        - name- POSTGRES_PASSWORD
+          valueFrom-
+            secretKeyRef-
+              name- pgconf-postgresql
+              key- postgres-password
+        - name- POD_IP
+          valueFrom- { fieldRef- { fieldPath- status.podIP } }
+        ports-
+        - name- postgresql
+          containerPort- 5432
+        livenessProbe-
+          tcpSocket-
+            port- 5432
+          initialDelaySeconds- 120
+          periodSeconds- 10
+          timeoutSeconds- 5
+          successThreshold- 1
+          failureThreshold- 6
+        readinessProbe-
+          exec-
+            command-
             - sh
             - -c
             - exec pg_isready -h $POD_IP
-          initialDelaySeconds: 5
-          periodSeconds: 5
-          timeoutSeconds: 3
-          successThreshold: 1
-          failureThreshold: 6
-        volumeMounts:
-        - name: data
-          mountPath: /var/lib/postgresql/data/pgdata
-          subPath: postgresql-db
-      volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: pgconf-postgresql
+          initialDelaySeconds- 5
+          periodSeconds- 5
+          timeoutSeconds- 3
+          successThreshold- 1
+          failureThreshold- 6
+        volumeMounts-
+        - name- data
+          mountPath- /var/lib/postgresql/data/pgdata
+          subPath- postgresql-db
+      volumes-
+      - name- data
+        persistentVolumeClaim-
+          claimName- pgconf-postgresql

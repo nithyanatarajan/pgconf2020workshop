@@ -1,12 +1,12 @@
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: pgconf-postgresql
-  labels:
-    app: postgresql
-spec:
-  accessModes:
+kind- PersistentVolumeClaim
+apiVersion- v1
+metadata-
+  name- pgconf-postgresql
+  labels-
+    app- postgresql
+spec-
+  accessModes-
     - "ReadWriteOnce"
-  resources:
-    requests:
-      storage: "1Gi"
+  resources-
+    requests-
+      storage- "1Gi"

@@ -1,13 +1,13 @@
 {
-  "initMode": "pitr",
-  "pitrConfig": {
-    "dataRestoreCommand": "PGPASSFILE=%s pg_basebackup -D %s -h  %s -p 5432 -U %s -X stream -c fast -S %s"
+  "initMode"- "pitr",
+  "pitrConfig"- {
+    "dataRestoreCommand"- "PGPASSFILE=%s pg_basebackup -D %s -h  %s -p 5432 -U %s -X stream -c fast -S %s"
   },
-  "role": "standby",
-  "standbyConfig": {
-    "standbySettings": {
-      "primaryConnInfo": "host=%s port=5432 user=%s password=%s sslmode=disable",
-      "primarySlotName": "%s"
+  "role"- "standby",
+  "standbyConfig"- {
+    "standbySettings"- {
+      "primaryConnInfo"- "host=%s port=5432 user=%s password=%s sslmode=disable",
+      "primarySlotName"- "%s"
     }
   }
 }

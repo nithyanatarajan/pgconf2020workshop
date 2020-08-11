@@ -1,27 +1,27 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pgconf-postgresql
-data:
-  POSTGRES_USER: "postgres"
-  POSTGRES_DB: "postgres"
+apiVersion- v1
+kind- ConfigMap
+metadata-
+  name- pgconf-postgresql
+data-
+  POSTGRES_USER- "postgres"
+  POSTGRES_DB- "postgres"
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: pgconf-files-postgresql
-  labels:
-    app: postgresql
-    release: "pgconf"
-data:
-  pg_hba.conf: |-
+apiVersion- v1
+kind- ConfigMap
+metadata-
+  name- pgconf-files-postgresql
+  labels-
+    app- postgresql
+    release- "pgconf"
+data-
+  pg_hba.conf- |-
     # TYPE  DATABASE        USER            ADDRESS                 METHOD
     # "local" is for Unix domain socket connections only
     local   all             all                                     trust
-    # IPv4 local connections:
+    # IPv4 local connections-
     host    all             all             127.0.0.1/32            trust
-    # IPv6 local connections:
-    host    all             all             ::1/128                 trust
-  postgresql.conf: |-
+    # IPv6 local connections-
+    host    all             all             --1/128                 trust
+  postgresql.conf- |-
     shared_buffers = 500MB
     listen_addresses = '*'

@@ -1,155 +1,155 @@
 ---
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: '{{ template "postgresql.standby.fullname" . }}'
-  labels:
+apiVersion- apps/v1
+kind- StatefulSet
+metadata-
+  name- '{{ template "postgresql.standby.fullname" . }}'
+  labels-
 {{- include "postgresql.labels" . | nindent 4 }}
-spec:
-  serviceName: '{{ template "postgresql.standby.fullname" . }}'
-  replicas: 1
-  updateStrategy:
-    type: RollingUpdate
-  selector:
-    matchLabels:
+spec-
+  serviceName- '{{ template "postgresql.standby.fullname" . }}'
+  replicas- 1
+  updateStrategy-
+    type- RollingUpdate
+  selector-
+    matchLabels-
 {{- include "postgresql.labels" . | nindent 6 }}
-      role: standby
-  template:
-    metadata:
-      name: '{{ template "postgresql.fullname" . }}'
-      labels:
+      role- standby
+  template-
+    metadata-
+      name- '{{ template "postgresql.fullname" . }}'
+      labels-
 {{- include "postgresql.labels" . | nindent 8 }}
-        role: standby
-    spec:
-      initContainers:
-        - name: create-repluser
-          image: thecasualcoder/dockerize:postgres-10.12-alpine
-          command: ["/bin/sh","-c"]
-          args: ['{{ template "create.replication.user" . }}']
-          envFrom:
-          - configMapRef:
-              name: '{{ template "postgresql.fullname" . }}'
-          env:
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: '{{ template "postgresql.fullname" . }}'
-                  key: postgres-password
-            - name: POSTGRES_REPLICATION_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: '{{ template "postgresql.fullname" . }}'
-                  key: postgres-replication-password
-          volumeMounts:
-          - name: replication-user-sql
-            mountPath: /opt
-        - name: change-permission
-          image: postgres:10.12
-          command: ["/bin/bash", "-c"]
-          args: ["chown -R 999:999 /var/lib/postgresql/data/pgdata"]
-          volumeMounts:
-          - name: data
-            mountPath: /var/lib/postgresql/data/pgdata
-            subPath: postgresql-db
-        - name: pgbasebackup
-          image: postgres:10.12
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-          command: ["/bin/bash", "-c"]
-          args:
+        role- standby
+    spec-
+      initContainers-
+        - name- create-repluser
+          image- thecasualcoder/dockerize-postgres-10.12-alpine
+          command- ["/bin/sh","-c"]
+          args- ['{{ template "create.replication.user" . }}']
+          envFrom-
+          - configMapRef-
+              name- '{{ template "postgresql.fullname" . }}'
+          env-
+            - name- PGDATA
+              value- /var/lib/postgresql/data/pgdata
+            - name- PGPASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- '{{ template "postgresql.fullname" . }}'
+                  key- postgres-password
+            - name- POSTGRES_REPLICATION_PASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- '{{ template "postgresql.fullname" . }}'
+                  key- postgres-replication-password
+          volumeMounts-
+          - name- replication-user-sql
+            mountPath- /opt
+        - name- change-permission
+          image- postgres-10.12
+          command- ["/bin/bash", "-c"]
+          args- ["chown -R 999-999 /var/lib/postgresql/data/pgdata"]
+          volumeMounts-
+          - name- data
+            mountPath- /var/lib/postgresql/data/pgdata
+            subPath- postgresql-db
+        - name- pgbasebackup
+          image- postgres-10.12
+          securityContext-
+            runAsUser- 999
+            runAsGroup- 999
+          command- ["/bin/bash", "-c"]
+          args-
            - "rm -rf /var/lib/postgresql/data/pgdata/* && pg_basebackup -h '{{ template "postgresql.fullname" . }}' -D /var/lib/postgresql/data/pgdata -U $POSTGRES_REPLICATION_USER -v -P -R"
-          envFrom:
-          - configMapRef:
-              name: '{{ template "postgresql.fullname" . }}'
-          env:
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: '{{ template "postgresql.fullname" . }}'
-                  key: postgres-replication-password
-          volumeMounts:
-          - name: data
-            mountPath: /var/lib/postgresql/data/pgdata
-            subPath: postgresql-db
-      containers:
-        - name: '{{ template "postgresql.fullname" . }}'
-          image: postgres:10.12
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-          args:
+          envFrom-
+          - configMapRef-
+              name- '{{ template "postgresql.fullname" . }}'
+          env-
+            - name- PGDATA
+              value- /var/lib/postgresql/data/pgdata
+            - name- PGPASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- '{{ template "postgresql.fullname" . }}'
+                  key- postgres-replication-password
+          volumeMounts-
+          - name- data
+            mountPath- /var/lib/postgresql/data/pgdata
+            subPath- postgresql-db
+      containers-
+        - name- '{{ template "postgresql.fullname" . }}'
+          image- postgres-10.12
+          securityContext-
+            runAsUser- 999
+            runAsGroup- 999
+          args-
             - -c
             - hba_file=/etc/postgres/pg_hba.conf
-          envFrom:
-          - configMapRef:
-              name: '{{ template "postgresql.fullname" . }}'
-          env:
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: '{{ template "postgresql.fullname" . }}'
-                  key: postgres-password
-            - name: POSTGRES_REPLICATION_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: '{{ template "postgresql.fullname" . }}'
-                  key: postgres-replication-password
-            - name: POD_IP
-              valueFrom: { fieldRef: { fieldPath: status.podIP } }
-          ports:
-            - name: postgresql
-              containerPort: 5432
-          livenessProbe:
-            tcpSocket:
-              port: 5432
-            initialDelaySeconds: 120
-            periodSeconds: 10
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 6
-          readinessProbe:
-            exec:
-              command:
+          envFrom-
+          - configMapRef-
+              name- '{{ template "postgresql.fullname" . }}'
+          env-
+            - name- PGDATA
+              value- /var/lib/postgresql/data/pgdata
+            - name- POSTGRES_PASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- '{{ template "postgresql.fullname" . }}'
+                  key- postgres-password
+            - name- POSTGRES_REPLICATION_PASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- '{{ template "postgresql.fullname" . }}'
+                  key- postgres-replication-password
+            - name- POD_IP
+              valueFrom- { fieldRef- { fieldPath- status.podIP } }
+          ports-
+            - name- postgresql
+              containerPort- 5432
+          livenessProbe-
+            tcpSocket-
+              port- 5432
+            initialDelaySeconds- 120
+            periodSeconds- 10
+            timeoutSeconds- 5
+            successThreshold- 1
+            failureThreshold- 6
+          readinessProbe-
+            exec-
+              command-
               - /bin/sh
               - -c
               - exec pg_isready -h $POD_IP
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 6
-          volumeMounts:
-          - name: data
-            mountPath: /var/lib/postgresql/data/pgdata
-            subPath: postgresql-db
-          - name: pg-hba-conf
-            mountPath: /etc/postgres/
-      volumes:
-      - name: pg-hba-conf
-        configMap:
-          name: '{{ template "postgresql.cmfiles.fullname" . }}'
-          items:
-            - key: pg_hba.conf
-              path: pg_hba.conf
-      - name: replication-user-sql
-        configMap:
-          name: '{{ template "postgresql.cmfiles.fullname" . }}'
-          items:
-            - key: replication_user.sql
-              path: replication_user.sql
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes:
+            initialDelaySeconds- 5
+            periodSeconds- 10
+            timeoutSeconds- 5
+            successThreshold- 1
+            failureThreshold- 6
+          volumeMounts-
+          - name- data
+            mountPath- /var/lib/postgresql/data/pgdata
+            subPath- postgresql-db
+          - name- pg-hba-conf
+            mountPath- /etc/postgres/
+      volumes-
+      - name- pg-hba-conf
+        configMap-
+          name- '{{ template "postgresql.cmfiles.fullname" . }}'
+          items-
+            - key- pg_hba.conf
+              path- pg_hba.conf
+      - name- replication-user-sql
+        configMap-
+          name- '{{ template "postgresql.cmfiles.fullname" . }}'
+          items-
+            - key- replication_user.sql
+              path- replication_user.sql
+  volumeClaimTemplates-
+    - metadata-
+        name- data
+      spec-
+        accessModes-
           - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: "1Gi"
+        resources-
+          requests-
+            storage- "1Gi"

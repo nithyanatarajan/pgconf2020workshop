@@ -1,173 +1,173 @@
 ---
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: pgconf-postgresql-standby
-  labels:
-    app: postgresql
-    release: "pgconf"
-spec:
-  serviceName: pgconf-postgresql-standby
-  replicas: 1
-  updateStrategy:
-    type: RollingUpdate
-  selector:
-    matchLabels:
-      app: postgresql
-      release: "pgconf"
-      role: standby
-  template:
-    metadata:
-      name: pgconf-postgresql
-      labels:
-        app: postgresql
-        release: "pgconf"
-        role: standby
-    spec:
-      initContainers:
-        - name: create-repluser
-          image: thecasualcoder/dockerize:postgres-10.12-alpine
-          command: ["/bin/sh","-c"]
-          args: ["dockerize -wait tcp://pgconf-postgresql:5432 -template /opt/replication_user.sql.tmpl 2>/dev/null | psql -U $POSTGRES_USER -h pgconf-postgresql" ]
-          envFrom:
-          - configMapRef:
-              name: pgconf-postgresql
-          env:
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: pgconf-postgresql
-                  key: postgres-password
-            - name: POSTGRES_REPLICATION_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: pgconf-postgresql
-                  key: postgres-replication-password
-          volumeMounts:
-          - name: replication-user-sql
-            mountPath: /opt
-        - name: generate-hba
-          image: jwilder/dockerize
-          volumeMounts:
-          - name: pg-hba-conf
-            mountPath: /pg_hba
-          - name: hba
-            mountPath: /etc/postgres/
-          args:
+apiVersion- apps/v1
+kind- StatefulSet
+metadata-
+  name- pgconf-postgresql-standby
+  labels-
+    app- postgresql
+    release- "pgconf"
+spec-
+  serviceName- pgconf-postgresql-standby
+  replicas- 1
+  updateStrategy-
+    type- RollingUpdate
+  selector-
+    matchLabels-
+      app- postgresql
+      release- "pgconf"
+      role- standby
+  template-
+    metadata-
+      name- pgconf-postgresql
+      labels-
+        app- postgresql
+        release- "pgconf"
+        role- standby
+    spec-
+      initContainers-
+        - name- create-repluser
+          image- thecasualcoder/dockerize-postgres-10.12-alpine
+          command- ["/bin/sh","-c"]
+          args- ["dockerize -wait tcp-//pgconf-postgresql-5432 -template /opt/replication_user.sql.tmpl 2>/dev/null | psql -U $POSTGRES_USER -h pgconf-postgresql" ]
+          envFrom-
+          - configMapRef-
+              name- pgconf-postgresql
+          env-
+            - name- PGDATA
+              value- /var/lib/postgresql/data/pgdata
+            - name- PGPASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- pgconf-postgresql
+                  key- postgres-password
+            - name- POSTGRES_REPLICATION_PASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- pgconf-postgresql
+                  key- postgres-replication-password
+          volumeMounts-
+          - name- replication-user-sql
+            mountPath- /opt
+        - name- generate-hba
+          image- jwilder/dockerize
+          volumeMounts-
+          - name- pg-hba-conf
+            mountPath- /pg_hba
+          - name- hba
+            mountPath- /etc/postgres/
+          args-
             - -template
-            - /pg_hba/pg_hba.conf.tmpl:/etc/postgres/pg_hba.conf
-          envFrom:
-          - configMapRef:
-              name: pgconf-postgresql
-        - name: change-permission
-          image: postgres:10.12
-          command: ["/bin/bash", "-c"]
-          args: ["chown -R 999:999 /var/lib/postgresql/data/pgdata"]
-          volumeMounts:
-          - name: data
-            mountPath: /var/lib/postgresql/data/pgdata
-            subPath: postgresql-db
-        - name: pgbasebackup
-          image: postgres:10.12
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-          command: ["/bin/bash", "-c"]
-          args:
+            - /pg_hba/pg_hba.conf.tmpl-/etc/postgres/pg_hba.conf
+          envFrom-
+          - configMapRef-
+              name- pgconf-postgresql
+        - name- change-permission
+          image- postgres-10.12
+          command- ["/bin/bash", "-c"]
+          args- ["chown -R 999-999 /var/lib/postgresql/data/pgdata"]
+          volumeMounts-
+          - name- data
+            mountPath- /var/lib/postgresql/data/pgdata
+            subPath- postgresql-db
+        - name- pgbasebackup
+          image- postgres-10.12
+          securityContext-
+            runAsUser- 999
+            runAsGroup- 999
+          command- ["/bin/bash", "-c"]
+          args-
            - "rm -rf /var/lib/postgresql/data/pgdata/* && pg_basebackup -h pgconf-postgresql -D /var/lib/postgresql/data/pgdata -U $POSTGRES_REPLICATION_USER -v -P -R"
-          envFrom:
-          - configMapRef:
-              name: pgconf-postgresql
-          env:
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-            - name: PGPASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: pgconf-postgresql
-                  key: postgres-replication-password
-          volumeMounts:
-          - name: data
-            mountPath: /var/lib/postgresql/data/pgdata
-            subPath: postgresql-db
-      containers:
-        - name: pgconf-postgresql
-          image: postgres:10.12
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-          args:
+          envFrom-
+          - configMapRef-
+              name- pgconf-postgresql
+          env-
+            - name- PGDATA
+              value- /var/lib/postgresql/data/pgdata
+            - name- PGPASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- pgconf-postgresql
+                  key- postgres-replication-password
+          volumeMounts-
+          - name- data
+            mountPath- /var/lib/postgresql/data/pgdata
+            subPath- postgresql-db
+      containers-
+        - name- pgconf-postgresql
+          image- postgres-10.12
+          securityContext-
+            runAsUser- 999
+            runAsGroup- 999
+          args-
             - -c
             - hba_file=/etc/postgres/pg_hba.conf
-          envFrom:
-          - configMapRef:
-              name: pgconf-postgresql
-          env:
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: pgconf-postgresql
-                  key: postgres-password
-            - name: POSTGRES_REPLICATION_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: pgconf-postgresql
-                  key: postgres-replication-password
-            - name: POD_IP
-              valueFrom: { fieldRef: { fieldPath: status.podIP } }
-          ports:
-            - name: postgresql
-              containerPort: 5432
-          livenessProbe:
-            tcpSocket:
-              port: 5432
-            initialDelaySeconds: 120
-            periodSeconds: 10
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 6
-          readinessProbe:
-            exec:
-              command:
+          envFrom-
+          - configMapRef-
+              name- pgconf-postgresql
+          env-
+            - name- PGDATA
+              value- /var/lib/postgresql/data/pgdata
+            - name- POSTGRES_PASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- pgconf-postgresql
+                  key- postgres-password
+            - name- POSTGRES_REPLICATION_PASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- pgconf-postgresql
+                  key- postgres-replication-password
+            - name- POD_IP
+              valueFrom- { fieldRef- { fieldPath- status.podIP } }
+          ports-
+            - name- postgresql
+              containerPort- 5432
+          livenessProbe-
+            tcpSocket-
+              port- 5432
+            initialDelaySeconds- 120
+            periodSeconds- 10
+            timeoutSeconds- 5
+            successThreshold- 1
+            failureThreshold- 6
+          readinessProbe-
+            exec-
+              command-
               - /bin/sh
               - -c
               - exec pg_isready -h $POD_IP
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 6
-          volumeMounts:
-          - name: data
-            mountPath: /var/lib/postgresql/data/pgdata
-            subPath: postgresql-db
-          - name: hba
-            mountPath: /etc/postgres/
-      volumes:
-      - name: pg-hba-conf
-        configMap:
-          name: pgconf-files-postgresql
-          items:
-            - key: pg_hba.conf.tmpl
-              path: pg_hba.conf.tmpl
-      - name: replication-user-sql
-        configMap:
-          name: pgconf-files-postgresql
-          items:
-            - key: replication_user.sql.tmpl
-              path: replication_user.sql.tmpl
-      - name: hba
-        emptyDir: {}
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes:
+            initialDelaySeconds- 5
+            periodSeconds- 10
+            timeoutSeconds- 5
+            successThreshold- 1
+            failureThreshold- 6
+          volumeMounts-
+          - name- data
+            mountPath- /var/lib/postgresql/data/pgdata
+            subPath- postgresql-db
+          - name- hba
+            mountPath- /etc/postgres/
+      volumes-
+      - name- pg-hba-conf
+        configMap-
+          name- pgconf-files-postgresql
+          items-
+            - key- pg_hba.conf.tmpl
+              path- pg_hba.conf.tmpl
+      - name- replication-user-sql
+        configMap-
+          name- pgconf-files-postgresql
+          items-
+            - key- replication_user.sql.tmpl
+              path- replication_user.sql.tmpl
+      - name- hba
+        emptyDir- {}
+  volumeClaimTemplates-
+    - metadata-
+        name- data
+      spec-
+        accessModes-
           - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: "1Gi"
+        resources-
+          requests-
+            storage- "1Gi"

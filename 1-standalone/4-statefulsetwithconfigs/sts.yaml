@@ -1,96 +1,96 @@
 ---
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: pgconf-postgresql
-  labels:
-    app: postgresql
-    release: "pgconf"
-spec:
-  serviceName: pgconf-postgresql
-  replicas: 1
-  updateStrategy:
-    type: RollingUpdate
-  selector:
-    matchLabels:
-      app: postgresql
-  template:
-    metadata:
-      name: pgconf-postgresql
-      labels:
-        app: postgresql
-    spec:      
-      initContainers:
-      - name: change-permission
-        image: postgres:10.12
-        command: ["/bin/bash", "-c"]
-        args: ["chown -R 999:999 /var/lib/postgresql/data/pgdata"]
-        volumeMounts:
-        - name: data
-          mountPath: /var/lib/postgresql/data/pgdata
-          subPath: postgresql-db
-      containers:
-        - name: pgconf-postgresql
-          image: postgres:10.12
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-          args:
+apiVersion- apps/v1
+kind- StatefulSet
+metadata-
+  name- pgconf-postgresql
+  labels-
+    app- postgresql
+    release- "pgconf"
+spec-
+  serviceName- pgconf-postgresql
+  replicas- 1
+  updateStrategy-
+    type- RollingUpdate
+  selector-
+    matchLabels-
+      app- postgresql
+  template-
+    metadata-
+      name- pgconf-postgresql
+      labels-
+        app- postgresql
+    spec-      
+      initContainers-
+      - name- change-permission
+        image- postgres-10.12
+        command- ["/bin/bash", "-c"]
+        args- ["chown -R 999-999 /var/lib/postgresql/data/pgdata"]
+        volumeMounts-
+        - name- data
+          mountPath- /var/lib/postgresql/data/pgdata
+          subPath- postgresql-db
+      containers-
+        - name- pgconf-postgresql
+          image- postgres-10.12
+          securityContext-
+            runAsUser- 999
+            runAsGroup- 999
+          args-
             - -c
             - hba_file=/etc/postgres/pg_hba.conf
             - -c
             - config_file=/etc/postgres/postgresql.conf
-          envFrom:
-          - configMapRef:
-              name: pgconf-postgresql
-          env:
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: pgconf-postgresql
-                  key: postgres-password
-            - name: POD_IP
-              valueFrom: { fieldRef: { fieldPath: status.podIP } }
-          ports:
-            - name: postgresql
-              containerPort: 5432
-          livenessProbe:
-            tcpSocket:
-              port: 5432
-            initialDelaySeconds: 120
-            periodSeconds: 10
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 6
-          readinessProbe:
-            exec:
-              command:
+          envFrom-
+          - configMapRef-
+              name- pgconf-postgresql
+          env-
+            - name- PGDATA
+              value- /var/lib/postgresql/data/pgdata
+            - name- POSTGRES_PASSWORD
+              valueFrom-
+                secretKeyRef-
+                  name- pgconf-postgresql
+                  key- postgres-password
+            - name- POD_IP
+              valueFrom- { fieldRef- { fieldPath- status.podIP } }
+          ports-
+            - name- postgresql
+              containerPort- 5432
+          livenessProbe-
+            tcpSocket-
+              port- 5432
+            initialDelaySeconds- 120
+            periodSeconds- 10
+            timeoutSeconds- 5
+            successThreshold- 1
+            failureThreshold- 6
+          readinessProbe-
+            exec-
+              command-
               - /bin/sh
               - -c
               - exec pg_isready -h $POD_IP
-            initialDelaySeconds: 5
-            periodSeconds: 10
-            timeoutSeconds: 5
-            successThreshold: 1
-            failureThreshold: 6
-          volumeMounts:
-          - name: data
-            mountPath: /var/lib/postgresql/data/pgdata
-            subPath: postgresql-db
-          - name: pg-conf
-            mountPath: /etc/postgres/
-      volumes:
-      - name: pg-conf
-        configMap:
-          name: pgconf-files-postgresql
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes:
+            initialDelaySeconds- 5
+            periodSeconds- 10
+            timeoutSeconds- 5
+            successThreshold- 1
+            failureThreshold- 6
+          volumeMounts-
+          - name- data
+            mountPath- /var/lib/postgresql/data/pgdata
+            subPath- postgresql-db
+          - name- pg-conf
+            mountPath- /etc/postgres/
+      volumes-
+      - name- pg-conf
+        configMap-
+          name- pgconf-files-postgresql
+  volumeClaimTemplates-
+    - metadata-
+        name- data
+      spec-
+        accessModes-
           - "ReadWriteOnce"
-        resources:
-          requests:
-            storage: "1Gi"
+        resources-
+          requests-
+            storage- "1Gi"

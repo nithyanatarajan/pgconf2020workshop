@@ -1,23 +1,23 @@
-Postgres can be accessed via port 5432 on the following DNS name from within your cluster:
+Postgres can be accessed via port 5432 on the following DNS name from within your cluster-
 
 {{ template "stolon.fullname" . }}.{{.Release.Namespace}}.svc.cluster.local
 
-To get your password run:
+To get your password run-
 
-  sh/bash/zsh shell:
+  sh/bash/zsh shell-
 
     PGPASSWORD=$(kubectl get secret --namespace {{ .Release.Namespace }} {{ template "stolon.fullname" . }} -o jsonpath="{.data.password}" | base64 --decode)
 
-  fish shell:
+  fish shell-
 
     export PGPASSWORD=(kubectl get secret --namespace {{ .Release.Namespace }} {{ template "stolon.fullname" . }} -o jsonpath="{.data.password}" | base64 --decode)
 
-To connect to your Postgres cluster:
+To connect to your Postgres cluster-
 
-1. Run a PostgreSQL pod that you can use as a client:
+1. Run a PostgreSQL pod that you can use as a client-
 
   kubectl run pgclient -n {{ .Release.Namespace }} --image=postgres --env PGPASSWORD=$PGPASSWORD -it --rm -- bash
 
-2. Inside the client run:
+2. Inside the client run-
 
   psql -U {{.Values.postgres.application.username}} -d {{.Values.postgres.application.dbname}} -h {{ template "stolon.fullname" . }}

@@ -1,22 +1,22 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: '{{ template "postgresql.fullname" . }}'
-  labels:
+apiVersion- v1
+kind- ConfigMap
+metadata-
+  name- '{{ template "postgresql.fullname" . }}'
+  labels-
     {{- include "postgresql.labels" . | nindent 4 }}
-data:
-  POSTGRES_USER: "{{ .Values.application.username }}"
-  POSTGRES_DB: "{{ .Values.application.database }}"
-  POSTGRES_REPLICATION_USER: "{{ .Values.replication.username }}"
+data-
+  POSTGRES_USER- "{{ .Values.application.username }}"
+  POSTGRES_DB- "{{ .Values.application.database }}"
+  POSTGRES_REPLICATION_USER- "{{ .Values.replication.username }}"
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: '{{ template "postgresql.cmfiles.fullname" . }}'
-  labels:
+apiVersion- v1
+kind- ConfigMap
+metadata-
+  name- '{{ template "postgresql.cmfiles.fullname" . }}'
+  labels-
     {{- include "postgresql.labels" . | nindent 4 }}
-data:
-  replication_user.sql: |-
+data-
+  replication_user.sql- |-
     DO
     $do$
     BEGIN
@@ -28,13 +28,13 @@ data:
       END IF;
     END
     $do$;
-  pg_hba.conf: |-
+  pg_hba.conf- |-
     local   all           all                     trust
     host    all           all       127.0.0.1/32  trust
-    host    all           all       ::1/128       trust
+    host    all           all       --1/128       trust
 
     host    all           {{ .Values.application.username }}  0.0.0.0/0     md5
-    host    all           {{ .Values.application.username }}  ::0/0         md5
+    host    all           {{ .Values.application.username }}  --0/0         md5
 
     host    replication   {{ .Values.replication.username }}  0.0.0.0/0     md5
-    host    replication   {{ .Values.replication.username }}  ::0/0         md5
+    host    replication   {{ .Values.replication.username }}  --0/0         md5

@@ -1,19 +1,19 @@
 {{- if .Values.metrics.enabled }}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ template "exporter.fullname" .}}
-  labels:
-    name: {{ template "exporter.fullname" .}}
+apiVersion- v1
+kind- Service
+metadata-
+  name- {{ template "exporter.fullname" .}}
+  labels-
+    name- {{ template "exporter.fullname" .}}
     {{- include "stolon.labels" . | nindent 4 }}
-spec:
-  type: ClusterIP
-  ports:
-    - port: 80
-      targetPort: 9187
-      protocol: TCP
-      name: metrics
-  selector:
-    name: {{ template "exporter.fullname" .}}
-    release: {{ .Release.Name }}
+spec-
+  type- ClusterIP
+  ports-
+    - port- 80
+      targetPort- 9187
+      protocol- TCP
+      name- metrics
+  selector-
+    name- {{ template "exporter.fullname" .}}
+    release- {{ .Release.Name }}
 {{- end }}

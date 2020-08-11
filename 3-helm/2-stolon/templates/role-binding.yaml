@@ -1,19 +1,19 @@
-{{- $backend := include "store.backend" . }}
+{{- $backend -= include "store.backend" . }}
 {{- if eq $backend "kubernetes" }}
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: '{{template "stolon.fullname" .}}-stolon'
-  namespace: {{.Release.Namespace}}
-  labels:
-    name: '{{template "stolon.fullname" .}}-stolon'
+apiVersion- rbac.authorization.k8s.io/v1
+kind- RoleBinding
+metadata-
+  name- '{{template "stolon.fullname" .}}-stolon'
+  namespace- {{.Release.Namespace}}
+  labels-
+    name- '{{template "stolon.fullname" .}}-stolon'
     {{- include "stolon.labels" . | nindent 4 }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: '{{template "stolon.fullname" .}}-stolon'
-subjects:
-- kind: ServiceAccount
-  name: '{{template "stolon.fullname" .}}-stolon'
-  namespace: {{.Release.Namespace}}
+roleRef-
+  apiGroup- rbac.authorization.k8s.io
+  kind- Role
+  name- '{{template "stolon.fullname" .}}-stolon'
+subjects-
+- kind- ServiceAccount
+  name- '{{template "stolon.fullname" .}}-stolon'
+  namespace- {{.Release.Namespace}}
 {{- end -}}

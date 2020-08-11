@@ -1,57 +1,57 @@
 {{- if .Values.metrics.enabled }}
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: {{ template "exporter.fullname" .}}
-  labels:
-    name: {{ template "exporter.fullname" .}}
+apiVersion- apps/v1
+kind- Deployment
+metadata-
+  name- {{ template "exporter.fullname" .}}
+  labels-
+    name- {{ template "exporter.fullname" .}}
     {{- include "stolon.labels" . | nindent 4 }}
-spec:
-  selector:
-    matchLabels:
-      name: {{ template "exporter.fullname" .}}
-      release: {{ .Release.Name }}
-  template:
-    metadata:
-      labels:
-        name: {{ template "exporter.fullname" .}}
-        release: {{ .Release.Name }}
-    spec:
-      containers:
-        - name: {{ .Chart.Name }}
+spec-
+  selector-
+    matchLabels-
+      name- {{ template "exporter.fullname" .}}
+      release- {{ .Release.Name }}
+  template-
+    metadata-
+      labels-
+        name- {{ template "exporter.fullname" .}}
+        release- {{ .Release.Name }}
+    spec-
+      containers-
+        - name- {{ .Chart.Name }}
 {{- if .Values.metrics.config }}
-          args:
+          args-
           - "--extend.query-path=/etc/config.yaml"
 {{- end }}
-          env:
-            - name: DATA_SOURCE_NAME
-              valueFrom:
-                secretKeyRef:
-                  key: data_source_name
-                  name: {{ template "exporter.fullname" .}}
-          image: "{{ .Values.metrics.image.name }}:{{ .Values.metrics.image.tag }}"
-          imagePullPolicy: {{ .Values.metrics.image.pullPolicy }}
-          ports:
-            - name: http
-              containerPort: 9187
-              protocol: TCP
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
+          env-
+            - name- DATA_SOURCE_NAME
+              valueFrom-
+                secretKeyRef-
+                  key- data_source_name
+                  name- {{ template "exporter.fullname" .}}
+          image- "{{ .Values.metrics.image.name }}-{{ .Values.metrics.image.tag }}"
+          imagePullPolicy- {{ .Values.metrics.image.pullPolicy }}
+          ports-
+            - name- http
+              containerPort- 9187
+              protocol- TCP
+          livenessProbe-
+            httpGet-
+              path- /
+              port- http
+          readinessProbe-
+            httpGet-
+              path- /
+              port- http
 {{- if .Values.metrics.config }}
-          volumeMounts:
-            - name: queries
-              mountPath: /etc/config.yaml
-              subPath: config.yaml
-      volumes:
-      - configMap:
-          defaultMode: 420
-          name: {{ template "exporter.fullname" .}}
-        name: queries
+          volumeMounts-
+            - name- queries
+              mountPath- /etc/config.yaml
+              subPath- config.yaml
+      volumes-
+      - configMap-
+          defaultMode- 420
+          name- {{ template "exporter.fullname" .}}
+        name- queries
 {{- end }}
 {{- end }}
